@@ -1,0 +1,34 @@
+version: "3"
+services:
+  blackbox:
+    image: prom/blackbox-exporter
+    container_name: blackbox_exporter
+    volumes:
+      - /etc/prometheus/blackbox.yml:/config/blackbox.yml
+    command: ["--config.file=/config/blackbox.yml"]
+    networks:
+{% if prom_samehost == true %}
+      - prometheus-network
+{% else %}
+      - default
+{% endif %}
+{% if loki_host == "" %}
+    logging:
+      options:
+        max-size: "10k"
+        max-file: "5"
+{% else %}
+    logging:
+      driver: loki
+      options:
+        loki-url: https://{{ loki_host }}/loki/api/v1/push
+        loki-tenant-id: {{ loki_tenant_id }}
+        max-size: "10k"
+        max-file: "5"
+{% endif %}
+
+{% if prom_samehost == true %}
+networks:
+  prometheus-network:
+    external: true
+{% endif %}

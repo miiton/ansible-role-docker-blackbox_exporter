@@ -1,0 +1,7 @@
+---
+- name: Restart blackbox_exporter
+  systemd:
+    name: docker-compose-service@blackbox_exporter
+    enabled: yes
+    state: restarted
+    daemon_reload: yes

@@ -1,0 +1,38 @@
+---
+- name: Create directories
+  file:
+    state: directory
+    path: "{{ item }}"
+    mode: 0755
+  with_items:
+    - /etc/prometheus
+    - /opt/docker-compose-service/blackbox_exporter
+
+- name: Create a prometheus network
+  docker_network:
+    name: prometheus-network
+    ipam_config:
+      - subnet: "{{ prom_network_subnet }}"
+    driver_options:
+      com.docker.network.bridge.name: prom0
+  when: prom_samehost == true
+  notify: Restart prometheus
+
+- name: Put docker-compose.yml
+  template:
+    src: docker-compose.yml.j2
+    dest: /opt/docker-compose-service/blackbox_exporter/docker-compose.yml
+  notify: Restart blackbox_exporter
+
+- name: Put blackbox.yml
+  template:
+    src: blackbox.yml.j2
+    dest: /etc/prometheus/blackbox.yml
+  notify: Restart blackbox_exporter
+
+- name: Start blackbox_exporter
+  systemd:
+    name: docker-compose-service@blackbox_exporter
+    enabled: yes
+    state: started
+    daemon_reload: yes
